@@ -1,8 +1,11 @@
 import { authModalState } from '@/atom/authModalAtom';
-
-
+import { auth} from "@/firebase/firebase";
+import { useEffect, useState } from "react";
 import React from 'react';
 import { useSetRecoilState } from "recoil";
+import { useRouter } from "next/router";
+import { useSignInWithEmailAndPassword } from "react-firebase-hooks/auth";
+
 
 type LoginProps = {
 	
@@ -13,16 +16,42 @@ const Login:React.FC<LoginProps> = () => {
 	const handleClick = (type: "login" | "register" | "forgotPassword") => {
 		setAuthModalState((prev) => ({ ...prev, type }));
 	};
-
+	const [inputs, setInputs] = useState({ email: "", password: "" });
+	const [
+		signInWithEmailAndPassword,
+		user,
+		loading,
+		error,
+	  ] = useSignInWithEmailAndPassword(auth);
+	  const router = useRouter();
+	  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		setInputs((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+	};
+	const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+		e.preventDefault();
+		if (!inputs.email || !inputs.password) return alert("Please fill all fields");
+		try {
+			const newUser = await signInWithEmailAndPassword(inputs.email, inputs.password);
+			if (!newUser) return;
+			router.push("/");
+		} catch (error: any) {
+			// toast.error(error.message, { position: "top-center", autoClose: 3000, theme: "dark" });
+		}
+	};
+	console.log(user,"user")
+	
+	useEffect(() => {
+		if (error)alert(error.message);
+	}, [error]);
 	return (
-		<form className='space-y-6 px-6 pb-4' >
+		<form className='space-y-6 px-6 pb-4'onSubmit={handleLogin} >
 			<h3 className='text-xl font-medium text-white'>Sign in to CodeVenture</h3>
 			<div>
 				<label htmlFor='email' className='text-sm font-medium block mb-2 text-gray-300'>
 					Your Email
 				</label>
 				<input
-					// onChange={handleInputChange}
+					onChange={handleInputChange}
 					type='email'
 					name='email'
 					id='email'
@@ -38,7 +67,7 @@ const Login:React.FC<LoginProps> = () => {
 					Your Password
 				</label>
 				<input
-					// onChange={handleInputChange}
+					onChange={handleInputChange}
 					type='password'
 					name='password'
 					id='password'
@@ -56,8 +85,8 @@ const Login:React.FC<LoginProps> = () => {
                 text-sm px-5 py-2.5 text-center bg-brand-orange hover:bg-brand-orange-s
             '
 			>
-				Log In
-				{/* {loading ? "Loading..." : "Log In"} */}
+				
+				{loading ? "Loading..." : "Log In"}
 			</button>
 			<button className='flex w-full justify-end' onClick={() => handleClick("forgotPassword")}>
 				<a href='#' className='text-sm block text-brand-orange hover:underline w-full text-right'>
